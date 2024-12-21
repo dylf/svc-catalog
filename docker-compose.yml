@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:15
+    container_name: svc-catalog-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: svc_catalog
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: svc-catalog-api:latest
+    container_name: svc-catalog-api
+    depends_on:
+      - db
+    ports:
+      - 3000:3000
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: password
+      DATABASE_NAME: svc_catalog
+    restart: unless-stopped
+    ## For dev attempt to seed the db.
+    command: sh -c "npm run seed-db && npm run start:dev"
+    volumes:
+      ## Mount the local filesystem for dev
+      - ./:/app:rw
+
+volumes:
+  postgres_data:
