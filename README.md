@@ -45,9 +45,26 @@ the project on `http://localhost:3000`
     - [ ] Bad service id
 - [ ] Test bad methods
 
+
+### Implementing Authentication
+For the purposes of this project, I did not implement authentication. If we were
+to add authentication to this api, I would use the following approach:
+- Leverage the nestjs passport and jwt modules
+- Create a jwt passport strategy that would validate the token
+- Add an authentication controller either providing endpoints to our own login
+mechanism or using a third-party service and adding a callback endpoint to
+populate our jwt.
+    - We would add services and entities to our app to store and retrieve
+    information about users and their orgs, or alternatively fetch the data from the
+    appropriate upstream identity service.
+- Create an auth guard to use in front of our protected endpoints
+    - We would want to store a user id, org id, and potentially roles to the jwt
+    to understand what entities and operations the client should be able to
+    access. (e.g. only services that are in their org.)
+
+
 ## Remaining tasks
 - Automate the test plan
-- Explore authentication options
 - Explore CRUD functionality
 - Improvments
     - Telemetry/logging
