@@ -83,11 +83,16 @@ method to the services controller.
 - All the above operations should have access checks based on the requesting
 user.
 
+## Other Considerations
+- We would want to add logging and tracing to production in order to monitor
+the service and understand how it is being used.
+- The services and service versions endpoints code could be seperated as the
+code becomes more complex.
+- Adding a caching layer to the service would be beneficial to reduce the load
+- Add a health check endpoint to monitor the service status.
+
 ## Remaining tasks
-- Automate the test plan
+- E2E tests
 - Improvments
-    - Telemetry/logging
     - Add openapi docs
     - Improve docker set up
-- Document any other assumptions or decisions made during the
-development process
