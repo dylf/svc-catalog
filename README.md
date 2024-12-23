@@ -62,10 +62,29 @@ populate our jwt.
     to understand what entities and operations the client should be able to
     access. (e.g. only services that are in their org.)
 
+## CRUD Operations
+Implementing CRUD operations would be a natural next step for this project.
+
+- For create operations we would want to validate request body and add a post
+method to the services controller.
+    - Certain fields like created, id, etc. are system generated and would not
+    be part of the request body.
+    - After implementing authentication we can add the users organization id,
+    and author to the entity
+- Read operations are already implemented.
+- Update operations would require a put method to the services controller.
+    - We would want to validate the request body to ensure all required fields
+    are sent with well-formed data. Read-only properties should not be part of
+    the update request.
+- Delete operations would require a delete method to the services controller.
+    - It may be worth considering a soft delete for the ability to recover from
+    accidental deletions, or to maintain history, etc. (we'd need to filter soft-deleted
+    entities from the other endpoints)
+- All the above operations should have access checks based on the requesting
+user.
 
 ## Remaining tasks
 - Automate the test plan
-- Explore CRUD functionality
 - Improvments
     - Telemetry/logging
     - Add openapi docs
