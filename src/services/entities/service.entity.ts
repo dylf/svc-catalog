@@ -40,10 +40,11 @@ export class Service {
   })
   author: string;
 
+  // We could potentially use an enum for this. A string gives us flexibility.
   @Column({
     default: 'published',
   })
-  status: string;
+  status: 'published' | 'unpublished';
 
   @Column({
     name: 'created_at',

@@ -16,7 +16,7 @@ export class ServicesController {
   @Get()
   async findAll(
     @Query('page') page = 1,
-    @Query('limit') limit = 12,
+    @Query('limit') limit = 50,
     @Query('sort') sort?: string,
     @Query('order') order: 'ASC' | 'DESC' = 'ASC',
     @Query('search') search?: string,
@@ -42,7 +42,7 @@ export class ServicesController {
         id: service.id,
         name: service.name,
         description: service.description,
-        url: '/services/' + service.id,
+        url: service.url,
         version_count: service.versions.length,
       };
     });
@@ -52,6 +52,7 @@ export class ServicesController {
       meta: {
         total,
         page,
+        page_size: limit,
         last_page: Math.ceil(total / limit),
       },
     };
@@ -63,17 +64,53 @@ export class ServicesController {
     if (!service) {
       throw new NotFoundException(`Service with ID ${id} not found`);
     }
-    return service;
+    return {
+      data: {
+        id: service.id,
+        name: service.name,
+        description: service.description,
+        url: service.url,
+        version_count: service.versions.length,
+      },
+      meta: {},
+    };
   }
 
   @Get(':id/versions')
-  async findVersions(@Param('id') id: string) {
+  async findVersions(
+    @Param('id') id: string,
+    @Query('page') page = 1,
+    @Query('limit') limit = 50,
+  ) {
     const service = await this.servicesService.findOne(id, {
       relations: ['versions'],
     });
     if (!service) {
       throw new NotFoundException(`Service with ID ${id} not found`);
     }
-    return service.versions;
+    const [serviceVersions, total] = await this.servicesService.findVersions(
+      id,
+      {
+        take: limit,
+        skip: (page - 1) * limit,
+      },
+    );
+    const data = serviceVersions.map((v) => {
+      return {
+        id: v.id,
+        version: v.version,
+        description: v.description,
+        url: v.url,
+      };
+    });
+    return {
+      data: data,
+      meta: {
+        total: total,
+        page,
+        page_size: limit,
+        last_page: Math.ceil(total / limit),
+      },
+    };
   }
 }

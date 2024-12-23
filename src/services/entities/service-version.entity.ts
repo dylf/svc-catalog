@@ -35,7 +35,7 @@ export class ServiceVersion {
   @Column({
     default: 'published',
   })
-  status: string;
+  status: 'published' | 'unpublished';
 
   @Column({
     name: 'created_at',
