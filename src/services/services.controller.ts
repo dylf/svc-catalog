@@ -80,7 +80,7 @@ export class ServicesController {
         total,
         page,
         page_size: limit,
-        last_page: Math.ceil(total / limit),
+        last_page: Math.max(1, Math.ceil(total / limit)),
       },
     };
   }
@@ -177,7 +177,7 @@ export class ServicesController {
         total: total,
         page,
         page_size: limit,
-        last_page: Math.ceil(total / limit),
+        last_page: Math.max(1, Math.ceil(total / limit)),
       },
     };
   }

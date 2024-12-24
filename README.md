@@ -26,6 +26,11 @@ Or locally with Node 20 and npm installed:
 npm run test
 ```
 
+Running the functional tests:
+```bash
+docker compose exec app npm run test:e2e
+```
+
 ### Querying the API
 
 With the application running you can view the API documentation at
