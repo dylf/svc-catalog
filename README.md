@@ -3,6 +3,7 @@
 A RESTful API that provides information about services and their versions.
 
 ## Getting Started
+
 ### Running locally
 
 To run this project locally, you will need to have docker compose installed.
@@ -13,6 +14,50 @@ docker compose up -d
 
 This will install the dependencies, seed the database with data and start
 the project on `http://localhost:3000`
+
+### Running tests
+
+To run the integration/unit tests, you can run the following command:
+```bash
+docker compose exec app npm run test
+```
+Or locally with Node 20 and npm installed:
+```bash
+npm run test
+```
+
+### Querying the API
+
+With the application running you can view the API documentation at
+[http://localhost:3000/docs](http://localhost:3000/docs).
+
+#### Example queries
+Querying for services containing the word "foo":
+```bash
+curl -X 'GET' \
+  'http://localhost:3000/services?page=1&limit=50&search=foo' \
+  -H 'accept: application/json'
+```
+
+Querying for a specific service by id:
+```bash
+curl -X 'GET' \
+  'http://localhost:3000/services' \
+  -H 'accept: application/json' \
+| jq '.data[0].id' | xargs -I {} curl -X 'GET' \
+    'http://localhost:3000/services/{}' \
+    -H 'accept: application/json'
+```
+
+Querying for a service's versions:
+```bash
+curl -X 'GET' \
+  'http://localhost:3000/services' \
+  -H 'accept: application/json' \
+| jq '.data[0].id' | xargs -I {} curl -X 'GET' \
+    'http://localhost:3000/services/{}/versions' \
+    -H 'accept: application/json'
+```
 
 ## Test Plan
 ### General
@@ -38,13 +83,6 @@ the project on `http://localhost:3000`
 - [ ] Test errors 
     - [ ] Bad service id
 - [ ] Test bad methods
-
-### Service Version Id Endpoint
-- [ ] Endpoint happy-path
-- [ ] Test errors 
-    - [ ] Bad service id
-- [ ] Test bad methods
-
 
 ### Implementing Authentication
 For the purposes of this project, I did not implement authentication. If we were
@@ -86,13 +124,7 @@ user.
 ## Other Considerations
 - We would want to add logging and tracing to production in order to monitor
 the service and understand how it is being used.
-- The services and service versions endpoints code could be seperated as the
-code becomes more complex.
-- Adding a caching layer to the service would be beneficial to reduce the load
+- The services and service versions endpoints code are currently colocated in
+the same controller this could be refactored as complexity is added.
 - Add a health check endpoint to monitor the service status.
-
-## Remaining tasks
-- E2E tests
-- Improvments
-    - Add openapi docs
-    - Improve docker set up
+- Expose sorting query parameters to the listing endpoints.

@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ServicesController } from './services.controller';
 import { ServicesService } from './services.service';
 import { Service } from './entities/service.entity';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { ServiceVersion } from './entities/service-version.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -39,6 +39,13 @@ describe('ServicesController', () => {
     );
 
     app = module.createNestApplication();
+    app.useGlobalPipes(
+      new ValidationPipe({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      }),
+    );
     await app.init();
   });
 
@@ -58,7 +65,14 @@ describe('ServicesController', () => {
           name: 'Service 1',
           description: 'Description 1',
           url: 'http://localhost/api/',
-          versions: [],
+          // @ts-expect-error type expects service ref but we are mocking it
+          versions: [0, 1, 2, 3].map((i) => ({
+            id: `version-uuid-${i}`,
+            version: `1.0.${i}`,
+            service: 'uuid-1',
+            description: 'Description 1',
+            url: `http://localhost/api/v1.0.${i}/`,
+          })),
           author: '1',
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -80,14 +94,16 @@ describe('ServicesController', () => {
         .spyOn(servicesRepository, 'findAndCount')
         .mockResolvedValue([mockServices, mockServices.length]);
 
-      const response = await request(app.getHttpServer()).get('/services');
+      const response = await request(app.getHttpServer()).get(
+        '/services?limit=20',
+      );
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual({
         meta: {
           total: 2,
           page: 1,
-          page_size: 50,
+          page_size: 20,
           last_page: 1,
         },
         data: [
@@ -96,7 +112,7 @@ describe('ServicesController', () => {
             name: 'Service 1',
             description: 'Description 1',
             url: 'http://localhost/api/',
-            version_count: 0,
+            version_count: 4,
           },
           {
             id: 'uuid-2',
@@ -106,6 +122,66 @@ describe('ServicesController', () => {
             version_count: 0,
           },
         ],
+      });
+    });
+
+    it('should return an bad response with a bad limit', async () => {
+      let response = await request(app.getHttpServer()).get(
+        '/services?limit=bad',
+      );
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        statusCode: 400,
+        message: [
+          'limit must not be greater than 100',
+          'limit must not be less than 1',
+          'limit must be an integer number',
+        ],
+        error: 'Bad Request',
+      });
+
+      response = await request(app.getHttpServer()).get('/services?limit=999');
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        statusCode: 400,
+        message: ['limit must not be greater than 100'],
+        error: 'Bad Request',
+      });
+
+      response = await request(app.getHttpServer()).get('/services?limit=-1');
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        statusCode: 400,
+        message: ['limit must not be less than 1'],
+        error: 'Bad Request',
+      });
+    });
+
+    it('should return an bad response with a bad page', async () => {
+      let response = await request(app.getHttpServer()).get(
+        '/services?page=bad',
+      );
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        statusCode: 400,
+        message: [
+          'page must not be less than 1',
+          'page must be an integer number',
+        ],
+        error: 'Bad Request',
+      });
+
+      response = await request(app.getHttpServer()).get('/services?page=-1');
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        statusCode: 400,
+        message: ['page must not be less than 1'],
+        error: 'Bad Request',
       });
     });
   });
@@ -168,7 +244,7 @@ describe('ServicesController', () => {
           {
             id: 'version-uuid-2',
             version: '1.0.1',
-        // @ts-expect-error type expects service ref but we are mocking it
+            // @ts-expect-error type expects service ref but we are mocking it
             service: 'uuid-1',
             description: 'Description 1',
             url: 'http://localhost/api/v1.0.1/',
@@ -209,6 +285,72 @@ describe('ServicesController', () => {
             url: 'http://localhost/api/v1.0.1/',
           },
         ],
+      });
+    });
+
+    it('should return an bad response with a bad limit', async () => {
+      let response = await request(app.getHttpServer()).get(
+        '/services/uuid-1/versions?limit=bad',
+      );
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        statusCode: 400,
+        message: [
+          'limit must not be greater than 100',
+          'limit must not be less than 1',
+          'limit must be an integer number',
+        ],
+        error: 'Bad Request',
+      });
+
+      response = await request(app.getHttpServer()).get(
+        '/services/uuid-1/versions?limit=999',
+      );
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        statusCode: 400,
+        message: ['limit must not be greater than 100'],
+        error: 'Bad Request',
+      });
+
+      response = await request(app.getHttpServer()).get(
+        '/services/uuid-1/versions?limit=-1',
+      );
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        statusCode: 400,
+        message: ['limit must not be less than 1'],
+        error: 'Bad Request',
+      });
+    });
+
+    it('should return an bad response with a bad page', async () => {
+      let response = await request(app.getHttpServer()).get(
+        '/services/uuid-1/versions?page=bad',
+      );
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        statusCode: 400,
+        message: [
+          'page must not be less than 1',
+          'page must be an integer number',
+        ],
+        error: 'Bad Request',
+      });
+
+      response = await request(app.getHttpServer()).get(
+        '/services/uuid-1/versions?page=-1',
+      );
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        statusCode: 400,
+        message: ['page must not be less than 1'],
+        error: 'Bad Request',
       });
     });
 

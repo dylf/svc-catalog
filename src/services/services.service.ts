@@ -31,6 +31,7 @@ export class ServicesService {
     return this.serviceVersionsRepository.findAndCount({
       ...options,
       where: { service: { id } },
+      order: { version: 'DESC' },
     });
   }
 }

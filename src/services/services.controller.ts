@@ -5,34 +5,61 @@ import {
   Query,
   NotFoundException,
 } from '@nestjs/common';
+import {
+  ApiBadRequestResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { ServicesService } from './services.service';
 import { Service } from './entities/service.entity';
 import { FindManyOptions, ILike } from 'typeorm';
+import { PaginationQueryDto } from './dto/pagination-query.dto';
+import { ServicesQueryDto } from './dto/services-query.dto';
+import {
+  badRequestResponseSchema,
+  metaResponseSchema,
+  serviceResponseSchema,
+} from './schemas/openapi-schemas';
 
 @Controller('services')
 export class ServicesController {
   constructor(private readonly servicesService: ServicesService) {}
 
   @Get()
-  async findAll(
-    @Query('page') page = 1,
-    @Query('limit') limit = 50,
-    @Query('sort') sort?: string,
-    @Query('order') order: 'ASC' | 'DESC' = 'ASC',
-    @Query('search') search?: string,
-  ) {
+  @ApiOperation({ summary: 'List all services' })
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: serviceResponseSchema,
+        },
+        meta: metaResponseSchema,
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid request',
+    schema: badRequestResponseSchema,
+  })
+  async findAll(@Query() query: ServicesQueryDto) {
+    const { page = 1, search } = query;
+    let { limit = 50 } = query;
     limit = limit > 100 ? 100 : limit;
 
     const options: FindManyOptions<Service> = {
       take: limit,
       skip: (page - 1) * limit,
-      order: sort ? { [sort]: order } : { id: 'ASC' },
-      // Can we just pull a count via the ORM?
       relations: ['versions'],
     };
 
     if (search) {
-      options.where = { name: ILike(`%${search}%`) };
+      options.where = [
+        { name: ILike(`%${search}%`) },
+        { description: ILike(`%${search}%`) },
+      ];
     }
 
     const [services, total] = await this.servicesService.findAll(options);
@@ -59,6 +86,21 @@ export class ServicesController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get a service by ID' })
+  @ApiResponse({
+    status: 200,
+    schema: {
+      type: 'object',
+      properties: {
+        data: serviceResponseSchema,
+        meta: { type: 'object' },
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid request',
+    schema: badRequestResponseSchema,
+  })
   async findOne(@Param('id') id: string) {
     const service = await this.servicesService.findOne(id);
     if (!service) {
@@ -77,11 +119,37 @@ export class ServicesController {
   }
 
   @Get(':id/versions')
+  @ApiOperation({ summary: 'List all versions for a service' })
+  @ApiBadRequestResponse({
+    description: 'Invalid request',
+    schema: badRequestResponseSchema,
+  })
+  @ApiResponse({
+    status: 200,
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              version: { type: 'string' },
+              description: { type: 'string' },
+              url: { type: 'string' },
+            },
+          },
+        },
+        meta: metaResponseSchema,
+      },
+    },
+  })
   async findVersions(
     @Param('id') id: string,
-    @Query('page') page = 1,
-    @Query('limit') limit = 50,
+    @Query() query: PaginationQueryDto,
   ) {
+    const { page = 1, limit = 50 } = query;
     const service = await this.servicesService.findOne(id, {
       relations: ['versions'],
     });
