@@ -31,9 +31,6 @@ services:
     restart: unless-stopped
     ## For dev attempt to seed the db.
     command: sh -c "npm run seed-db && npm run start:dev"
-    volumes:
-      ## Mount the local filesystem for dev
-      - ./:/app:rw
 
 volumes:
   postgres_data:
